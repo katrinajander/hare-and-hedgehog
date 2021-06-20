@@ -1,0 +1,16 @@
+C:\Users\katri\Desktop\CSharp\project\obj\Debug\net5.0-windows\project.csprojAssemblyReference.cache
+C:\Users\katri\Desktop\CSharp\project\obj\Debug\net5.0-windows\project.GeneratedMSBuildEditorConfig.editorconfig
+C:\Users\katri\Desktop\CSharp\project\obj\Debug\net5.0-windows\project.AssemblyInfoInputs.cache
+C:\Users\katri\Desktop\CSharp\project\obj\Debug\net5.0-windows\project.AssemblyInfo.cs
+C:\Users\katri\Desktop\CSharp\project\obj\Debug\net5.0-windows\project.csproj.CoreCompileInputs.cache
+C:\Users\katri\Desktop\CSharp\project\bin\Debug\net5.0-windows\project.exe
+C:\Users\katri\Desktop\CSharp\project\bin\Debug\net5.0-windows\project.deps.json
+C:\Users\katri\Desktop\CSharp\project\bin\Debug\net5.0-windows\project.runtimeconfig.json
+C:\Users\katri\Desktop\CSharp\project\bin\Debug\net5.0-windows\project.runtimeconfig.dev.json
+C:\Users\katri\Desktop\CSharp\project\bin\Debug\net5.0-windows\project.dll
+C:\Users\katri\Desktop\CSharp\project\bin\Debug\net5.0-windows\ref\project.dll
+C:\Users\katri\Desktop\CSharp\project\bin\Debug\net5.0-windows\project.pdb
+C:\Users\katri\Desktop\CSharp\project\obj\Debug\net5.0-windows\project.dll
+C:\Users\katri\Desktop\CSharp\project\obj\Debug\net5.0-windows\ref\project.dll
+C:\Users\katri\Desktop\CSharp\project\obj\Debug\net5.0-windows\project.pdb
+C:\Users\katri\Desktop\CSharp\project\obj\Debug\net5.0-windows\project.genruntimeconfig.cache
