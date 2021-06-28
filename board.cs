@@ -1,19 +1,34 @@
+using static System.Console;
 class Board{
-
-    public event Notify changed; // fires whenever the board changes
 
     public static Player[] players;
     public static bool[] positions; //true if there is a player at that position
     public static int curPlayer;
     public int numWinners; //to calculate how many carrots to finish with legally
 
-    static string[] squares = {"", "rabbit", "carrot", "rabbit", "3", "carrot", "rabbit", "salad", "hedgehog", "4", "2",
-                        "hedgehog", "3", "carrot", "rabbit", "hedgehog", "1,5,6", "2", "4", "hedgehog", "3",
-                        "carrot", "salad", "2", "hedgehog", "rabbit", "carrot", "4", "3", "2", "hedgehog",
-                        "rabbit", "1,5,6", "carrot", "hedgehog", "2", "3", "hedgehog", "carrot", "rabbit", "carrot",
-                        "2", "salad", "hedgehog", "3", "4", "rabbit", "2", "1,5,6", "carrot", "hedgehog",
-                        "rabbit", "3", "2", "4", "carrot", "hedgehog", "salad", "rabbit", "carrot", "2",
-                        "rabbit", "salad", "rabbit"}; //first square is 1
+    enum SqType {CARROT, HEDGEHOG, RABBIT, SALAD, SQ_156, SQ_2, SQ_3, SQ_4}
+
+    static string[] squares = {"", SqType.CARROT.ToString(),  SqType.CARROT.ToString(),  SqType.RABBIT.ToString(), 
+                                SqType.SQ_3.ToString(),  SqType.CARROT.ToString(), SqType.RABBIT.ToString(), 
+                                SqType.SALAD.ToString(), SqType.HEDGEHOG.ToString(), SqType.SQ_4.ToString(), 
+                                SqType.SQ_2.ToString(), SqType.HEDGEHOG.ToString(), SqType.SQ_3.ToString(),  
+                                SqType.CARROT.ToString(), SqType.RABBIT.ToString(), SqType.HEDGEHOG.ToString(), 
+                                SqType.SQ_156.ToString(), SqType.SQ_2.ToString(), SqType.SQ_4.ToString(), 
+                                SqType.HEDGEHOG.ToString(), SqType.SQ_3.ToString(), SqType.CARROT.ToString(), 
+                                SqType.SALAD.ToString(), SqType.SQ_2.ToString(), SqType.HEDGEHOG.ToString(), 
+                                SqType.RABBIT.ToString(),  SqType.CARROT.ToString(), SqType.SQ_4.ToString(), 
+                                SqType.SQ_3.ToString(), SqType.SQ_2.ToString(), SqType.HEDGEHOG.ToString(),
+                                SqType.RABBIT.ToString(), SqType.SQ_156.ToString(),  SqType.CARROT.ToString(), 
+                                SqType.HEDGEHOG.ToString(), SqType.SQ_2.ToString(), SqType.SQ_3.ToString(), 
+                                SqType.HEDGEHOG.ToString(),  SqType.CARROT.ToString(), SqType.RABBIT.ToString(), 
+                                SqType.CARROT.ToString(), SqType.SQ_2.ToString(), SqType.SALAD.ToString(), 
+                                SqType.HEDGEHOG.ToString(), SqType.SQ_3.ToString(), SqType.SQ_4.ToString(), 
+                                SqType.RABBIT.ToString(), SqType.SQ_2.ToString(), SqType.SQ_156.ToString(), 
+                                SqType.CARROT.ToString(), SqType.HEDGEHOG.ToString(), SqType.RABBIT.ToString(), 
+                                SqType.SQ_3.ToString(), SqType.SQ_2.ToString(), SqType.SQ_4.ToString(), 
+                                SqType.CARROT.ToString(), SqType.HEDGEHOG.ToString(), SqType.SALAD.ToString(), 
+                                SqType.RABBIT.ToString(),  SqType.CARROT.ToString(), SqType.SQ_2.ToString(),
+                                SqType.RABBIT.ToString(), SqType.SALAD.ToString(), SqType.RABBIT.ToString()}; //first square is 1
 
     public Board(Player[] curPlayers){
         players = curPlayers;
@@ -63,25 +78,6 @@ class Board{
         int nextPlayer = curPlayer + 1;
         if(nextPlayer >= players.Length){
             nextPlayer = 0;
-            //one round has passed, check if anyone is on a number space and give carrots
-            Player[] order = playerOrder();
-
-            for(int i = 0; i < players.Length; i++){
-                Player p = order[i];
-                string type = squares[p.pos];
-                if(type == "1,5,6" || type == "2" || type == "3" || type == "4"){ //if on a number square
-                    if(type == "1,5,6"){
-                        if(i == 1 || i == 5 || i == 6){
-                            p.carrots += i * 10;
-                        }
-                    }
-                    else{ //square is either 2, 3, or 4
-                        if(int.Parse(type) == i){
-                            p.carrots += i * 10;
-                        }
-                    }
-                }
-            }
         }
         //see if the next player's turn needs to be skipped (due to eating salad or winning)
         while(true){
@@ -108,23 +104,86 @@ class Board{
         curPlayer = nextPlayer;
     }
 
+    //checks if the player currently moving passes a rabbit square with another player
+    //and increments numPassed for that player
+    //direction is moving forwards (true) or backwards (false)
+    public static void checkPassing(int startPos, int endPos, bool dir){
+        if(dir){
+            for(int i = startPos; i < endPos; i++){
+                //if passing a rabbit square
+                if(squares[i] == SqType.RABBIT.ToString()){
+                    foreach(Player otherPlayer in players){
+                        if(otherPlayer.pos == i){
+                            otherPlayer.numPassed++;
+                        }
+                    }
+                }
+            }
+        }
+        else{
+            for(int i = startPos; i > endPos; i--){
+                //if passing a rabbit square
+                if(squares[i] == SqType.RABBIT.ToString()){
+                    foreach(Player otherPlayer in players){
+                        if(otherPlayer.pos == i){
+                            otherPlayer.numPassed++;
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     //makes the current player move to position pos and returns true if legal
     public bool move(int newPos) {
         Player p = players[curPlayer];
         int c = cost(p.pos, newPos);
+
+        //awarding carrots if on a number square
+        Player[] order = playerOrder();
+        int place = 0;
+        for(int i = 0; i < order.Length; i++){
+            if(p == order[i]){
+                place = i;
+            }
+        }
+        string curSquare = squares[p.pos];
+        if(curSquare == SqType.SQ_156.ToString() || curSquare == SqType.SQ_2.ToString() 
+                || curSquare == SqType.SQ_3.ToString() || curSquare == SqType.SQ_4.ToString()){
+            if(curSquare == SqType.SQ_156.ToString()){
+                if(place == 1 || place == 5 || place == 6){
+                    p.carrots += place * 10;
+                }
+            }
+            else{ //square is either 2, 3, or 4
+                if(int.Parse(curSquare[curSquare.Length - 1].ToString()) == place){
+                    p.carrots += place * 10;
+                }
+            }
+        }
+
+        //awarding/giving carrots for rabbit squares
+        if(p.numPassed == 0){ //no players passed the current player
+            p.carrots += 10; //get 10 carrots
+        }
+        else{
+            p.carrots -= 10 * p.numPassed;
+        }
+        p.numPassed = 0;
+
         if(newPos == p.pos){ //staying in the same spot (only on rabbit and carrot spaces)
-            if(squares[newPos] == "rabbit" || squares[newPos] == "carrot"){ //rabbit squares do nothing
-                if(squares[newPos] == "rabbit"){ //FIX to be able to reduce carrots
+            if(squares[newPos] == SqType.RABBIT.ToString() || squares[newPos] == SqType.CARROT.ToString()){
+                if(squares[newPos] == SqType.RABBIT.ToString()){ 
                     p.carrots += 10;
                 }
                 updateCurPlayer();
-                if (changed != null){
-                    changed();
-                }
                 return true;
             }
         }
+
+        //moving forwards
         else if(newPos > p.pos){ //moving forwards
+            checkPassing(p.pos, newPos, true);
             //if the player is crossing the finish line (space can be occupied)
             if(newPos == 64){ 
                 if(p.carrots - c <= (numWinners * 10) && p.salads == 0){
@@ -132,8 +191,8 @@ class Board{
                 }
             }
             //if the player can pay for the move, is not moving forward onto a hedgehog, and an empty space
-            if(c < p.carrots && squares[newPos] != "hedgehog" && !isOccupied(newPos)){
-                if(squares[newPos] == "salad"){
+            if(c < p.carrots && squares[newPos] != SqType.HEDGEHOG.ToString() && !isOccupied(newPos)){
+                if(squares[newPos] == SqType.SALAD.ToString()){
                     p.eatingSalad = true;
                     p.salads--; //eat a salad
                 }
@@ -142,22 +201,17 @@ class Board{
                 positions[newPos] = true; // moved to new spot
                 p.pos = newPos;
                 updateCurPlayer();
-                if (changed != null){
-                    changed();
-                }
                 return true;
             }
         }
         else{ //moving backwards
-            if(squares[newPos] == "hedgehog" && !isOccupied(newPos)){
+            checkPassing(p.pos, newPos, false);
+            if(squares[newPos] == SqType.HEDGEHOG.ToString() && !isOccupied(newPos)){
                 p.carrots += c; //gain carrots
                 positions[p.pos] = false;
                 positions[newPos] = true; //moved to new spot
                 p.pos = newPos;
                 updateCurPlayer();
-                if (changed != null){
-                    changed();
-                }
                 return true;
             }
         }
