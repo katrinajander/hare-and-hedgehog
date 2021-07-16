@@ -142,17 +142,17 @@ class MyWindow : Form{
             Graphics g = args.Graphics;
             g.DrawImage(boardImage, 0, 0);
             g.DrawString("Hare and Hedgehog", titleFont, textBrush, new Point(360,25));
-            g.DrawString("Current player: " + Board.players[Board.curPlayer].color, playerFont, textBrush, new Point(710,25));
+            g.DrawString("Current player: " + game.b.players[game.b.curPlayer].color, playerFont, textBrush, new Point(710,25));
             g.DrawString("Cost to move forward is n(n+1)/2, where n = # of spaces", playerFont, textBrush, new Point(25,735));
 
-            foreach(Player p in Board.players){
+            foreach(Player p in game.b.players){
                 int playerPos = p.pos;
                 if(playerPos == 0 || playerPos == 64){ //start or end
                     g.FillEllipse(brushes[p.num], MARGIN + points[playerPos].X * 30 + p.num * 10, 
                     MARGIN + points[playerPos].Y * 30, SQUARE_LENGTH, SQUARE_LENGTH);
                 }
                 else{
-                    if(p == Board.players[Board.curPlayer]){
+                    if(p == game.b.players[game.b.curPlayer]){
                         g.FillEllipse(Brushes.White, MARGIN + points[playerPos].X * 30 + HALF_SQUARE / 2, 
                         MARGIN + points[playerPos].Y * 30 + HALF_SQUARE / 2, HALF_SQUARE, HALF_SQUARE);
                     }
@@ -182,8 +182,89 @@ class MyWindow : Form{
 
 static class Program{
 
+    static void assert(bool b) {
+        if (!b)
+            throw new Exception("assertion failed");
+    }
+
+    static void test1(){
+        //testing rabbit square
+        Game game = new Game(2);
+        game.setArray(2);
+        Board board = game.b;
+        Player pl0 = game.b.players[0], pl1 = game.b.players[1];
+
+        assert(pl0.carrots == 65 && pl1.carrots == 65);
+
+        assert(game.b.curPlayer == 0);
+        board.move(1);  // take 1 step onto hare square
+        assert(pl0.carrots == 64);  // lost 1 carrot
+
+        assert(game.b.curPlayer == 1);
+        board.move(2);  // take 2 steps onto carrot square
+        assert(pl1.carrots == 62);  // lost 3 carrots
+
+        assert(game.b.curPlayer == 0);
+        assert(pl0.carrots == 54);  // lost 10 carrots for being passed on a rabbit square
+    }
+
+    static void test2(){
+        //testing number square
+        Game game = new Game(3);
+        game.setArray(3);
+        Board board = game.b;
+        Player p0 = game.b.players[0], p1 = game.b.players[1], p2 = game.b.players[2];
+
+        assert(game.b.curPlayer == 0);
+        board.move(4);  // move onto 3 square
+        assert(p0.carrots == 55);  // spend 10 carrots
+
+        assert(game.b.curPlayer == 1);
+        board.move(6);  // move past player 0
+        assert(p1.carrots == 44);  // spend 15 carrots
+
+        assert(game.b.curPlayer == 2);
+        board.move(5);  // move past player 0
+        assert(p2.carrots == 50);  // 
+
+        assert(game.b.curPlayer == 0);
+        assert(p0.carrots == 85);  // gain 30 carrot for being on the 3
+        board.move(3);  // move to salad
+    }
+
+    static void test3(){
+        //testing hedgehog and salad squares
+        Game game = new Game(3);
+        game.setArray(3);
+        Board board = game.b;
+        Player p0 = game.b.players[0], p1 = game.b.players[1], p2 = game.b.players[2];
+
+        assert(game.b.curPlayer == 0);
+        board.move(7);  // move onto salad
+        assert(p0.carrots == 37);  // spend 28 carrots
+        assert(p0.salads == 2);
+
+        assert(game.b.curPlayer == 1);
+        board.move(9);
+        assert(p1.carrots == 20);  // spend carrots
+
+        assert(game.b.curPlayer == 2);
+        board.move(10);
+        assert(p2.carrots == 10);  // spend carrots
+
+        assert(game.b.curPlayer == 1); //skip p0's turn
+        board.move(8); //move backwards to hedgehog
+        assert(p1.carrots == 30);  // get 10 carrots
+
+        assert(game.b.curPlayer == 2);
+        board.move(11);
+    }
+
     [STAThread]
     static void Main() {
+        test1();
+        test2();
+        test3();
         Form form = new MyWindow();
         Application.Run(form);
     }

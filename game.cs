@@ -1,3 +1,4 @@
+
 class Game{
     string[] colors = {"Red", "Green", "Blue", "Orange", "White", "Purple"};
     public Player[] p;
