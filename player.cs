@@ -1,9 +1,3 @@
-using System;
-using static System.Console;
-using System.Collections.Generic;
-using System.Drawing;
-using System.Windows.Forms;
-
 class Player{
     public int num;
     public string color;

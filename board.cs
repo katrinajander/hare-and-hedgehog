@@ -1,5 +1,5 @@
-using static System.Console;
 using static Board.SqType;
+using static System.Console;
 
 class Board{
 
@@ -10,14 +10,15 @@ class Board{
     public int curPlayer;
     public int numWinners; //to calculate how many carrots to finish with legally
 
+    //start and end have no type
     static SqType[] squares = {None, Rabbit, Carrot, Rabbit, SQ_3, Carrot, Rabbit, 
                                 Salad, Hedgehog, SQ_4, SQ_2, Hedgehog, SQ_3, Carrot, Rabbit, Hedgehog, 
                                 SQ_156, SQ_2, SQ_4, Hedgehog, SQ_3, Carrot, Salad, SQ_2, Hedgehog, 
                                 Rabbit,  Carrot, SQ_4, SQ_3, SQ_2, Hedgehog, Rabbit, SQ_156, Carrot, 
-                                Hedgehog, SQ_2, SQ_3, Hedgehog, Carrot, Rabbit, Carrot, SQ_2, Salad, 
+                                Rabbit, SQ_2, SQ_3, Hedgehog, Carrot, Rabbit, Carrot, SQ_2, Salad, 
                                 Hedgehog, SqType.SQ_3, SQ_4, Rabbit, SQ_2, SQ_156, Carrot, Hedgehog, Rabbit, 
                                 SQ_3, SQ_2, SQ_4, Carrot, Hedgehog, Salad, Rabbit, Carrot, SQ_2, 
-                                Rabbit, Salad, Rabbit}; //first square is 1
+                                Rabbit, Salad, Rabbit, None}; //first square is 1
 
     public Board(Player[] curPlayers){
         players = curPlayers;
@@ -63,27 +64,40 @@ class Board{
         return order;
     }
 
+    //returns in which place a player is
+    public int playerPlace(Player p){
+        Player[] order = playerOrder();
+        int place = 0; //which place the current player is in
+        for(int i = 0; i < order.Length; i++){
+            if(p == order[i]){
+                place = i;
+            }
+        }
+        place++;
+        return place;
+    }
+
     public void updateCurPlayer(){
         int nextPlayer = curPlayer + 1;
         if(nextPlayer >= players.Length){
             nextPlayer = 0;
         }
+        
         //see if the next player's turn needs to be skipped (due to eating salad or winning)
         while(true){
-            if(!players[nextPlayer].eatingSalad){
+            if(!players[nextPlayer].eatingSalad && !players[nextPlayer].won){
                 break;
             }
-            else{ //skip player's turn
+            //if eating salad, skip player's turn and award carrots for eating salad
+            if(players[nextPlayer].eatingSalad){
+                players[nextPlayer].carrots += 10 * playerPlace(players[nextPlayer]);
                 players[nextPlayer].eatingSalad = false;
                 nextPlayer++;
                 if(nextPlayer >= players.Length){
                     nextPlayer = 0;
                 }
             }
-            if(!players[nextPlayer].won){
-                break;
-            }
-            else{ //skip player's turn
+            if(players[nextPlayer].won){
                 nextPlayer++;
                 if(nextPlayer >= players.Length){
                     nextPlayer = 0;
@@ -93,36 +107,43 @@ class Board{
         curPlayer = nextPlayer;
         rabbitSquare(players[curPlayer]);
         numberSquare(players[curPlayer]);
+
+        //check if the player has negative money, or can't move backwards
+        if(players[curPlayer].carrots < 0){
+            positions[players[curPlayer].pos] = false;
+            players[curPlayer].carrots = 65;
+            players[curPlayer].pos = 0;
+            positions[0] = true; //moved to new spot
+        }
     }
 
     //checks if the player currently moving passes a rabbit square with another player
     //and increments numPassed for that player
     //direction is moving forwards (true) or backwards (false)
     public void checkPassing(int startPos, int endPos, bool dir){
-        if(dir){
-            for(int i = startPos; i < endPos; i++){
-                //if passing a rabbit square
-                if(squares[i] == Rabbit){
-                    foreach(Player otherPlayer in players){
-                        if(otherPlayer.pos == i){
-                            otherPlayer.numPassed++;
-                        }
+        int di = dir ? 1 : -1;
+        for(int i = startPos; i != endPos; i += di){
+            //if passing a rabbit square
+            if(squares[i] == Rabbit){
+                foreach(Player otherPlayer in players){
+                    if(otherPlayer.pos == i && players[curPlayer] != otherPlayer){
+                        otherPlayer.numPassed++;
+                        //WriteLine(players[curPlayer].color + " just passed " + otherPlayer.color);
+                        //WriteLine("increased passed count for " + otherPlayer.color);
                     }
                 }
             }
-        }
-        else{
-            for(int i = startPos; i > endPos; i--){
-                //if passing a rabbit square
-                if(squares[i] == Rabbit){
-                    foreach(Player otherPlayer in players){
-                        if(otherPlayer.pos == i){
-                            otherPlayer.numPassed++;
-                        }
-                    }
-                }
+         }
+    }
+
+    //returns true if the player is moving to the nearest hedgehog square
+    public bool nearestHedgehog(int startPos, int endPos){
+        for(int i = startPos - 1; i > endPos; i--){
+            if(squares[i] == Hedgehog){
+                return false;
             }
         }
+        return true;
     }
 
     //awarding/taking carrots for rabbit squares
@@ -144,20 +165,7 @@ class Board{
     //called whenever current player changes (start of a turn)
     public void numberSquare(Player p){
         //awarding carrots if on a number square
-        Player[] order = playerOrder();
-        /*WriteLine("the order at the start of " + p.color + "'s turn is:");
-        foreach(Player player in order){
-            if(player != null)
-                WriteLine(player.color);
-        }
-        WriteLine();*/
-        int place = 0; //which place the current player is in
-        for(int i = 0; i < order.Length; i++){
-            if(p == order[i]){
-                place = i;
-            }
-        }
-        place++;
+        int place = playerPlace(p); //which place the current player is in
         
         SqType curSquare = squares[p.pos];
         if(curSquare == SQ_156 || curSquare == SQ_2 || curSquare == SQ_3 || curSquare == SQ_4){
@@ -195,14 +203,18 @@ class Board{
         else if(newPos > p.pos){ //moving forwards
             checkPassing(p.pos, newPos, true);
             //if the player is crossing the finish line (space can be occupied)
-            if(newPos == 64){ 
+            if(newPos == 65){ 
                 if(p.carrots - c <= (numWinners * 10) && p.salads == 0){
                     p.won = true;
+                    WriteLine("player " + p.color + " has won");
                 }
             }
             //if the player can pay for the move, is not moving forward onto a hedgehog, and an empty space
             if(c < p.carrots && squares[newPos] != Hedgehog && !isOccupied(newPos)){
                 if(squares[newPos] == Salad){
+                    if(p.salads == 0){
+                        return false; //cannot eat more than 3 salads
+                    }
                     p.eatingSalad = true;
                     p.salads--; //eat a salad
                 }
@@ -217,12 +229,14 @@ class Board{
         else{ //moving backwards
             checkPassing(p.pos, newPos, false);
             if(squares[newPos] == Hedgehog && !isOccupied(newPos)){
-                p.carrots += c; //gain carrots
-                positions[p.pos] = false;
-                positions[newPos] = true; //moved to new spot
-                p.pos = newPos;
-                updateCurPlayer();
-                return true;
+                if(nearestHedgehog(p.pos, newPos)){
+                    p.carrots += c; //gain carrots
+                    positions[p.pos] = false;
+                    positions[newPos] = true; //moved to new spot
+                    p.pos = newPos;
+                    updateCurPlayer();
+                    return true;
+                }
             }
         }
         return false;
